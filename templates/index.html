@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>URL Scanner</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #333;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #2962ff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1e4bd8;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #252525;
+            border-radius: 8px;
+        }
+        .scan-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            background-color: #333;
+            color: white;
+        }
+        .malicious {
+            background-color: #ff1744;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>URL Security Scanner</h1>
+        <div class="input-group">
+            <input type="text" id="apiKey" placeholder="Enter your VirusTotal API key">
+            <input type="text" id="urlInput" placeholder="Enter URL to scan">
+            <button onclick="scanUrl()">Scan URL</button>
+        </div>
+        <div id="results" class="results" style="display: none;">
+            <h2>Scan Results</h2>
+            <div id="scanInfo"></div>
+            <div id="scanDetails"></div>
+        </div>
+    </div>
+    <script>
+        async function scanUrl() {
+            const apiKey = document.getElementById('apiKey').value;
+            const url = document.getElementById('urlInput').value;
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('scanInfo').innerHTML = 'Scanning...';
+
+            try {
+                const response = await fetch('/scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ api_key: apiKey, url: url })
+                });
+
+                const data = await response.json();
+
+                let scanInfo = `
+                    <p>URL: ${data.url}</p>
+                    <p>Scan Date: ${data.scan_date}</p>
+                    <p>Positives: ${data.positives} / ${data.total}</p>
+                `;
+
+                let scanDetails = '<h3>Detailed Results:</h3>';
+                for (const [scanner, result] of Object.entries(data.scans)) {
+                    const resultText = (result.result || '').toLowerCase();
+                    const isThreating = resultText.includes('malicious') ||
+                                      resultText.includes('phishing') ||
+                                      resultText.includes('suspicious');
+                    const className = isThreating ? 'scan-item malicious' : 'scan-item';
+                    scanDetails += `
+                        <div class="${className}">
+                            ${scanner}: ${result.result || 'Clean'}
+                        </div>
+                    `;
+                }
+
+                document.getElementById('scanInfo').innerHTML = scanInfo;
+                document.getElementById('scanDetails').innerHTML = scanDetails;
+            } catch (error) {
+                document.getElementById('scanInfo').innerHTML = 'Error scanning URL';
+            }
+        }
+    </script>
+</body>
+</html>
